@@ -1,0 +1,10 @@
+{
+  "name": "planar",
+  "version": "0.1.0",
+  "description": "Puzzle game",
+  "author": "Michael Zhang",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^3.3.3333"
+  }
+}
