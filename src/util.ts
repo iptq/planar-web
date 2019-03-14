@@ -13,3 +13,11 @@ export function zip<A, B>(a: A[], b: B[]): [A, B][] {
     }
     return result;
 }
+
+export function enumerate<T>(arr: T[]): [number, T][] {
+    let result = [];
+    for (let i = 0; i < arr.length; ++i) {
+        result.push([i, arr[i]]);
+    }
+    return result;
+}

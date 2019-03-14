@@ -2,6 +2,8 @@ import { IBlock, Block } from "./blocks";
 import { Game } from "./game";
 import { IPlayer, Player } from "./player";
 import { IGoal, Goal } from "./goals";
+import { Direction } from "./segments";
+import { enumerate } from "./util";
 
 export class ILevel {
     blocks: IBlock[];
@@ -30,6 +32,12 @@ export class Level {
         level.dimensions = data.dimensions;
         level.goals = [Goal.from(data.goals[0]), Goal.from(data.goals[1])];
         return level;
+    }
+
+    moveBlock(block: Block, direction: Direction) {
+        for (let [i, segment] of enumerate(block.segments)) {
+
+        }
     }
 
     render(cellSize: number, padding: number = 1): [HTMLCanvasElement, HTMLCanvasElement] {
