@@ -4,7 +4,11 @@
   "description": "Puzzle game",
   "author": "Michael Zhang",
   "license": "MIT",
+  "scripts": {
+    "build": "parcel build index.html"
+  },
   "devDependencies": {
+    "parcel": "^1.12.2",
     "typescript": "^3.3.3333"
   },
   "dependencies": {
