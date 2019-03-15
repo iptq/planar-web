@@ -1,5 +1,6 @@
 import { Level } from "./levels";
 import { ISegment, Segment, Direction } from "./segments";
+import { Dictionary } from "typescript-collections";
 
 export interface IBlock {
     x: number;
@@ -11,10 +12,10 @@ export interface IBlock {
 }
 
 export class Block {
-    private minX: number;
-    private minY: number;
-    private maxX: number;
-    private maxY: number;
+    private minX: number = 0;
+    private minY: number = 0;
+    private maxX: number = 0;
+    private maxY: number = 0;
 
     parent: Level;
     x: number;
@@ -24,31 +25,55 @@ export class Block {
     movable: boolean;
     direction: Direction;
 
-    static from(parent: Level, data: IBlock): Block {
-        let block = new Block();
-        block.parent = parent;
-        block.x = data.x;
-        block.y = data.y;
-        block.minX = 0;
-        block.minY = 0;
-        block.maxX = 0;
-        block.maxY = 0;
-        block.color = data.color;
-        block.movable = data.movable;
-        block.direction = data.direction;
+    constructor(parent: Level, data: IBlock) {
+        this.parent = parent;
+        this.x = data.x;
+        this.y = data.y;
+        this.minX = 0;
+        this.minY = 0;
+        this.maxX = 0;
+        this.maxY = 0;
+        this.color = data.color;
+        this.movable = data.movable;
+        this.direction = data.direction;
 
-        block.segments = data.segments.map(data => Segment.from(block, data));
-        for (let segment of block.segments) {
-            block.minX = Math.min(block.minX, segment.rx);
-            block.minY = Math.min(block.minY, segment.ry);
-            block.maxX = Math.max(block.maxX, segment.rx);
-            block.maxY = Math.max(block.maxY, segment.ry);
+        this.segments = data.segments.map(data => new Segment(this, data));
+        for (let segment of this.segments) {
+            this.minX = Math.min(this.minX, segment.rx);
+            this.minY = Math.min(this.minY, segment.ry);
+            this.maxX = Math.max(this.maxX, segment.rx);
+            this.maxY = Math.max(this.maxY, segment.ry);
         }
-
-        return block;
     }
 
-    render(cellSize: number, padding: number = 1): [HTMLCanvasElement, HTMLCanvasElement, number, number] {
+    string(): string {
+        let segments = this.segments.map(segment => segment.string()).join(",");
+        return `Block<${this.x},${this.y},[${segments}]>`;
+    }
+
+    canMove(direction: Direction, byPlayer: boolean = false, ignore): Dictionary<Block, Direction> | null {
+        if ((this.direction == Direction.Horizontal && (direction == Direction.Up || direction == Direction.Down)) ||
+            (this.direction == Direction.Vertical && (direction == Direction.Left || direction == Direction.Right))) {
+            return null;
+        }
+
+        let result = new Dictionary<Block, Direction>();
+        let failed = false;
+        for (let segment of this.segments) {
+            let res = segment.canMove(direction);
+            if (res == null)
+                failed = true;
+            else {
+                for (let key of res.keys())
+                    result.setValue(key, res.getValue(key));
+            }
+        }
+        if (failed) return null;
+        result.setValue(this, direction);
+        return result;
+    }
+
+    renderBlock(cellSize: number, padding: number = 1): [HTMLCanvasElement, HTMLCanvasElement, number, number] {
         let left = <HTMLCanvasElement> document.createElement("canvas");
         left.width = (this.maxX - this.minX + 1) * cellSize;
         left.height = (this.maxY - this.minY + 1) * cellSize;
@@ -56,8 +81,8 @@ export class Block {
         right.width = (this.maxX - this.minX + 1) * cellSize;
         right.height = (this.maxY - this.minY + 1) * cellSize;
 
-        let leftctx = left.getContext("2d");
-        let rightctx = right.getContext("2d");
+        let leftctx: CanvasRenderingContext2D = left.getContext("2d");
+        let rightctx: CanvasRenderingContext2D = right.getContext("2d");
         let layers = [leftctx, rightctx];
 
         for (let segment of this.segments) {

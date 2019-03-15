@@ -2,6 +2,7 @@ import { Block } from "../blocks";
 import { Event } from "../events";
 import { Game } from "../game";
 import { Level } from "../levels";
+import { Key } from "../keyboard";
 import { State } from "./index";
 import { Direction } from "../segments";
 import { zip } from "../util";
@@ -25,12 +26,57 @@ export class GameState implements State {
                     block.y = y;
                     this.level.moveBlock(block, d);
                 }
+                this.level.moveStack.push(this.moveResult);
+                this.transitioning = false;
+                this.animationProgress = 0;
+                this.moveResult = [];
+                this.originalPositions = [];
             } else {
                 this.animationProgress += dt;
                 for (let [block, d] of this.moveResult) {
                     block.x += dt * d[0];
                     block.y += dt * d[1];
                 }
+            }
+        }
+
+        for (let event of events) {
+            switch (event.kind) {
+            case "keydown":
+                if (!this.transitioning) {
+                    switch (event.code) {
+                    case Key.W:
+                        this.moveResult = this.level.players[0].tryMove(Direction.Up);
+                        break;
+                    case Key.A:
+                        this.moveResult = this.level.players[0].tryMove(Direction.Left);
+                        break;
+                    case Key.S:
+                        this.moveResult = this.level.players[0].tryMove(Direction.Down);
+                        break;
+                    case Key.D:
+                        this.moveResult = this.level.players[0].tryMove(Direction.Right);
+                        break;
+                    case Key.I:
+                        this.moveResult = this.level.players[1].tryMove(Direction.Up);
+                        break;
+                    case Key.J:
+                        this.moveResult = this.level.players[1].tryMove(Direction.Left);
+                        break;
+                    case Key.K:
+                        this.moveResult = this.level.players[1].tryMove(Direction.Down);
+                        break;
+                    case Key.L:
+                        this.moveResult = this.level.players[1].tryMove(Direction.Right);
+                        break;
+                    }
+                    if (this.moveResult != null) {
+                        this.originalPositions = this.moveResult.map(([block, d]): [number, number] => [block.x, block.y]);
+                        this.transitioning = true;
+                        this.animationProgress = 0;
+                    }
+                }
+                break;
             }
         }
     }

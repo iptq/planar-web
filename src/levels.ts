@@ -2,10 +2,11 @@ import { IBlock, Block } from "./blocks";
 import { Game } from "./game";
 import { IPlayer, Player } from "./player";
 import { IGoal, Goal } from "./goals";
-import { Direction } from "./segments";
+import { Direction, directionCoords } from "./segments";
+import { Dictionary } from "typescript-collections";
 import { enumerate } from "./util";
 
-export class ILevel {
+export interface ILevel {
     blocks: IBlock[];
     dimensions: [number, number];
     players: [IPlayer, IPlayer];
@@ -13,7 +14,10 @@ export class ILevel {
 }
 
 export class Level {
+    cellMap = new Dictionary<[number, number, number], [Block, number][]>();
+    moveStack: [Block, Direction][][] = [];
     parent: Game;
+
     blocks: Block[];
     dimensions: [number, number];
     players: [Player, Player];
@@ -21,23 +25,24 @@ export class Level {
 
     static load(parent: Game, contents: string): Level {
         let data: ILevel = JSON.parse(contents);
-        return Level.from(parent, data);
+        return new Level(parent, data);
     }
 
-    static from(parent: Game, data: ILevel): Level {
-        let level = new Level();
-        level.players = [Player.from(level, data.players[0]), Player.from(level, data.players[1])];
-        level.parent = parent;
-        level.blocks = data.blocks.map(data => Block.from(level, data));
-        level.dimensions = data.dimensions;
-        level.goals = [Goal.from(data.goals[0]), Goal.from(data.goals[1])];
-        return level;
+    constructor(parent: Game, data: ILevel) {
+        this.players = [new Player(this, data.players[0]), new Player(this, data.players[1])];
+        this.parent = parent;
+        this.blocks = data.blocks.map(data => new Block(this, data));
+        this.dimensions = data.dimensions;
+        this.goals = [new Goal(data.goals[0]), new Goal(data.goals[1])];
     }
 
     moveBlock(block: Block, direction: Direction) {
         for (let [i, segment] of enumerate(block.segments)) {
-
+            // TODO:
         }
+        let [dx, dy] = directionCoords(direction);
+        block.x += dx;
+        block.y += dy;
     }
 
     render(cellSize: number, padding: number = 1): [HTMLCanvasElement, HTMLCanvasElement] {
@@ -70,7 +75,7 @@ export class Level {
         }
 
         for (let block of this.blocks) {
-            let [left, right, xOff, yOff] = block.render(cellSize, padding);
+            let [left, right, xOff, yOff] = block.renderBlock(cellSize, padding);
             leftctx.drawImage(left, xOff, yOff);
             rightctx.drawImage(right, xOff, yOff);
         }

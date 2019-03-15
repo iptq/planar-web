@@ -1,4 +1,5 @@
 import { Block } from "./blocks";
+import { Dictionary } from "typescript-collections";
 
 export interface ISegment {
     rx: number;
@@ -18,14 +19,31 @@ export enum SegmentType {
 export enum Direction {
     Horizontal,
     Vertical,
+    Both,
+
     Up,
     Down,
     Left,
     Right,
 }
 
+export function directionCoords(direction: Direction) {
+    switch (direction) {
+    case Direction.Up:
+        return [0, -1];
+    case Direction.Down:
+        return [0, 1];
+    case Direction.Left:
+        return [-1, 0];
+    case Direction.Right:
+        return [1, 0];
+    default:
+        throw new Error("invalid direction");
+    }
+}
+
 export class Segment {
-    static cache: { [key: string]: HTMLCanvasElement } = {};
+    static cache = new Dictionary<string, HTMLCanvasElement>();
 
     parent: Block;
     rx: number;
@@ -33,14 +51,37 @@ export class Segment {
     z: number;
     t: SegmentType;
 
-    static from(parent: Block, data: ISegment) {
-        let segment = new Segment();
-        segment.parent = parent;
-        segment.rx = data.rx;
-        segment.ry = data.ry;
-        segment.z = data.z;
-        segment.t = data.t;
-        return segment;
+    constructor(parent: Block, data: ISegment) {
+        this.parent = parent;
+        this.rx = data.rx;
+        this.ry = data.ry;
+        this.z = data.z;
+        this.t = data.t;
+    }
+
+    string(): string {
+        return `Segment<${this.rx},${this.ry},${this.z},${this.t}>`;
+    }
+
+    canMove(direction: Direction): Dictionary<Block, Direction> | null {
+        let [sx, sy] = [this.parent.x + this.rx, this.parent.y + this.ry];
+        let curr: [number, number, number] = [sx, sy, this.z];
+
+        let [dx, dy] = directionCoords(direction);
+        let target = [sx + dx, sy + dy, this.z];
+
+        let [cols, rows] = this.parent.parent.dimensions;
+        if (target[0] < 0 || target[0] >= cols || target[1] < 0 || target[1] >= rows)
+            return null;
+
+        if (!this.parent.movable)
+            return null;
+
+        let currOccupants: [Block, number][] = this.parent.parent.cellMap.getValue(curr);
+        if (this.t != SegmentType.Rectangle && currOccupants.length == 2) {
+        }
+
+        return new Dictionary<Block, Direction>();
     }
 
     render(cellSize: number, padding: number = 1): HTMLCanvasElement {
@@ -48,7 +89,7 @@ export class Segment {
         let color = `rgb(${r}, ${g}, ${b})`;
         let key = [cellSize, padding, this.t, color, this.parent.direction].toString();
 
-        if (!(key in Segment.cache)) {
+        if (!Segment.cache.containsKey(key)) {
             let tile = <HTMLCanvasElement> document.createElement("canvas");
             tile.width = cellSize;
             tile.height = cellSize;
@@ -119,9 +160,9 @@ export class Segment {
                 ctx.stroke();
             }
 
-            Segment.cache[key] = tile;
+            Segment.cache.setValue(key, tile);
         }
 
-        return Segment.cache[key];
+        return Segment.cache.getValue(key);
     }
 }

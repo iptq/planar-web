@@ -1,4 +1,7 @@
 {
-    "target": "es6",
-    "sourceMap": true
+    "compilerOptions": {
+        "target": "es5",
+        "strict": true,
+        "sourceMap": true
+    }
 }
