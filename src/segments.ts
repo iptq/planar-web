@@ -63,7 +63,7 @@ export class Segment {
         return `Segment<${this.rx},${this.ry},${this.z},${this.t}>`;
     }
 
-    canMove(direction: Direction): Dictionary<Block, Direction> | null {
+    canMove(direction: Direction, byPlayer: boolean): Dictionary<Block, Direction> | null {
         let [sx, sy] = [this.parent.x + this.rx, this.parent.y + this.ry];
         let curr: [number, number, number] = [sx, sy, this.z];
 
@@ -75,6 +75,9 @@ export class Segment {
             return null;
 
         if (!this.parent.movable)
+            return null;
+
+        if (this.parent.isPlayer && !byPlayer)
             return null;
 
         let currOccupants: [Block, number][] = this.parent.parent.cellMap.getValue(curr);

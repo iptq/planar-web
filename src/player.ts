@@ -21,6 +21,10 @@ export class Player {
         return this.block.y;
     }
 
+    get z(): number {
+        return this.block.segments[0].z;
+    }
+
     constructor(parent: Level, data: IPlayer) {
         this.parent = parent;
 
@@ -37,9 +41,11 @@ export class Player {
                 t: SegmentType.Rectangle,
             }],
         });
+        this.block.isPlayer = true;
     }
 
     render(cellSize: number): HTMLCanvasElement {
+        // console.log(this.x, this.y, this.z);
         let tile = <HTMLCanvasElement> document.createElement("canvas");
         tile.width = cellSize;
         tile.height = cellSize;
@@ -61,7 +67,6 @@ export class Player {
             this.parent.moveBlock(block, d);
             moves.push([block, d]);
         });
-
         this.parent.moveStack.push(moves);
 
         // undo if invalid

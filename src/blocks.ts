@@ -12,10 +12,15 @@ export interface IBlock {
 }
 
 export class Block {
-    private minX: number = 0;
-    private minY: number = 0;
-    private maxX: number = 0;
-    private maxY: number = 0;
+    private left: HTMLCanvasElement;
+    private right: HTMLCanvasElement;
+
+    get leftctx(): CanvasRenderingContext2D {
+        return this.left.getContext("2d");
+    }
+    get rightctx(): CanvasRenderingContext2D {
+        return this.right.getContext("2d");
+    }
 
     parent: Level;
     x: number;
@@ -24,26 +29,20 @@ export class Block {
     color: [number, number, number];
     movable: boolean;
     direction: Direction;
+    isPlayer: boolean;
 
     constructor(parent: Level, data: IBlock) {
+        this.left = document.createElement("canvas");
+        this.right = document.createElement("canvas");
+
         this.parent = parent;
         this.x = data.x;
         this.y = data.y;
-        this.minX = 0;
-        this.minY = 0;
-        this.maxX = 0;
-        this.maxY = 0;
         this.color = data.color;
         this.movable = data.movable;
         this.direction = data.direction;
-
         this.segments = data.segments.map(data => new Segment(this, data));
-        for (let segment of this.segments) {
-            this.minX = Math.min(this.minX, segment.rx);
-            this.minY = Math.min(this.minY, segment.ry);
-            this.maxX = Math.max(this.maxX, segment.rx);
-            this.maxY = Math.max(this.maxY, segment.ry);
-        }
+        this.isPlayer = false;
     }
 
     string(): string {
@@ -60,7 +59,7 @@ export class Block {
         let result = new Dictionary<Block, Direction>();
         let failed = false;
         for (let segment of this.segments) {
-            let res = segment.canMove(direction);
+            let res = segment.canMove(direction, byPlayer);
             if (res == null)
                 failed = true;
             else {
@@ -73,21 +72,19 @@ export class Block {
         return result;
     }
 
-    renderBlock(cellSize: number, padding: number = 1): [HTMLCanvasElement, HTMLCanvasElement, number, number] {
-        let left = <HTMLCanvasElement> document.createElement("canvas");
-        left.width = (this.maxX - this.minX + 1) * cellSize;
-        left.height = (this.maxY - this.minY + 1) * cellSize;
-        let right = <HTMLCanvasElement> document.createElement("canvas");
-        right.width = (this.maxX - this.minX + 1) * cellSize;
-        right.height = (this.maxY - this.minY + 1) * cellSize;
-
-        let leftctx: CanvasRenderingContext2D = left.getContext("2d");
-        let rightctx: CanvasRenderingContext2D = right.getContext("2d");
-        let layers = [leftctx, rightctx];
+    renderBlock(cellSize: number, padding: number = 1): [HTMLCanvasElement, HTMLCanvasElement] {
+        let [cols, rows] = this.parent.dimensions;
+        this.left.width = cellSize * cols;
+        this.left.height = cellSize * rows;
+        this.leftctx.clearRect(0, 0, this.left.width, this.left.height);
+        this.right.width = cellSize * cols;
+        this.right.height = cellSize * rows;
+        this.rightctx.clearRect(0, 0, this.right.width, this.right.height);
+        let layers = [this.leftctx, this.rightctx];
 
         for (let segment of this.segments) {
-            let x = segment.rx - this.minX;
-            let y = segment.ry - this.minY;
+            let x = this.x + segment.rx;
+            let y = this.y + segment.ry;
 
             let xOff = x * cellSize;
             let yOff = y * cellSize;
@@ -96,8 +93,6 @@ export class Block {
             layers[segment.z].drawImage(canvas, xOff, yOff);
         }
 
-        let xOff = (this.x + this.minX) * cellSize;
-        let yOff = (this.y + this.minY) * cellSize;
-        return [left, right, xOff, yOff];
+        return [this.left, this.right];
     }
 }

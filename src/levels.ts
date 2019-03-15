@@ -23,6 +23,8 @@ export class Level {
     players: [Player, Player];
     goals: [Goal, Goal];
 
+    defaultTile: HTMLCanvasElement;
+
     static load(parent: Game, contents: string): Level {
         let data: ILevel = JSON.parse(contents);
         return new Level(parent, data);
@@ -34,9 +36,16 @@ export class Level {
         this.blocks = data.blocks.map(data => new Block(this, data));
         this.dimensions = data.dimensions;
         this.goals = [new Goal(data.goals[0]), new Goal(data.goals[1])];
+
+        this.defaultTile = <HTMLCanvasElement> document.createElement("canvas");
+    }
+
+    get tilectx(): CanvasRenderingContext2D {
+        return this.defaultTile.getContext("2d");
     }
 
     moveBlock(block: Block, direction: Direction) {
+        console.log(block);
         for (let [i, segment] of enumerate(block.segments)) {
             // TODO:
         }
@@ -46,12 +55,10 @@ export class Level {
     }
 
     render(cellSize: number, padding: number = 1): [HTMLCanvasElement, HTMLCanvasElement] {
-        let defaultTile = <HTMLCanvasElement> document.createElement("canvas");
-        defaultTile.width = cellSize;
-        defaultTile.height = cellSize;
-        let tilectx = defaultTile.getContext("2d");
-        tilectx.fillStyle = "rgba(200, 200, 200)";
-        tilectx.fillRect(0, 0, cellSize, cellSize);
+        this.defaultTile.width = cellSize;
+        this.defaultTile.height = cellSize;
+        this.tilectx.fillStyle = "rgba(200, 200, 200)";
+        this.tilectx.fillRect(0, 0, cellSize, cellSize);
 
         let [cols, rows] = this.dimensions;
         let left = <HTMLCanvasElement> document.createElement("canvas");
@@ -69,15 +76,15 @@ export class Level {
             layer.fillRect(0, 0, cellSize * cols + 1, cellSize * rows + 1);
             for (let x = 0; x < cols; ++x) {
                 for (let y = 0; y < rows; ++y) {
-                    layer.drawImage(defaultTile, x * cellSize, y * cellSize);
+                    layer.drawImage(this.defaultTile, x * cellSize, y * cellSize);
                 }
             }
         }
 
         for (let block of this.blocks) {
-            let [left, right, xOff, yOff] = block.renderBlock(cellSize, padding);
-            leftctx.drawImage(left, xOff, yOff);
-            rightctx.drawImage(right, xOff, yOff);
+            let [left, right] = block.renderBlock(cellSize, padding);
+            leftctx.drawImage(left, 0, 0);
+            rightctx.drawImage(right, 0, 0);
         }
 
         for (let goal of this.goals) {

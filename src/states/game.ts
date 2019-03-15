@@ -4,8 +4,10 @@ import { Game } from "../game";
 import { Level } from "../levels";
 import { Key } from "../keyboard";
 import { State } from "./index";
-import { Direction } from "../segments";
+import { Direction, directionCoords } from "../segments";
 import { zip } from "../util";
+
+const ANIMATION_SPEED = 2;
 
 export class GameState implements State {
     private transitioning: boolean = false;
@@ -20,7 +22,7 @@ export class GameState implements State {
 
     update(dt: number, events: Event[]) {
         if (this.transitioning) {
-            if (this.animationProgress + dt > 1) {
+            if (this.animationProgress + dt > (1 / ANIMATION_SPEED)) {
                 for (let [[block, d], [x, y]] of zip(this.moveResult, this.originalPositions)) {
                     block.x = x;
                     block.y = y;
@@ -34,8 +36,9 @@ export class GameState implements State {
             } else {
                 this.animationProgress += dt;
                 for (let [block, d] of this.moveResult) {
-                    block.x += dt * d[0];
-                    block.y += dt * d[1];
+                    let [dx, dy] = directionCoords(d);
+                    block.x += ANIMATION_SPEED * dt * dx;
+                    block.y += ANIMATION_SPEED * dt * dy;
                 }
             }
         }

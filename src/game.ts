@@ -31,7 +31,7 @@ export class Game {
 
     loop(ctx: CanvasRenderingContext2D) {
         let now = Date.now();
-        let elapsed = now - this.lastUpdate;
+        let elapsed = (now - this.lastUpdate) / 1000.0;
 
         this.update(elapsed);
         this.draw(elapsed, ctx);
